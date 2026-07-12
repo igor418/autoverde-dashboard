@@ -1,14 +1,4 @@
-// api/data.js
-// API serverless da Vercel — substitui o window.storage do artifact do Claude.
-// Rotas (todas via POST no mesmo endpoint /api/data, com "action" no corpo):
-//   { action: "get",    key: "financeiro-diario" }
-//   { action: "set",    key: "financeiro-diario", value: {...} }
-//   { action: "delete", key: "financeiro-diario" }
-//
-// Usa o Postgres conectado ao projeto na Vercel (variável de ambiente POSTGRES_URL,
-// criada automaticamente quando você conecta um banco Postgres/Neon ao projeto).
-
-import { sql } from '@vercel/postgres';
+import { Pool } from 'pg';
 
 const ALLOWED_KEYS = new Set([
   'financeiro-diario',
@@ -16,18 +6,37 @@ const ALLOWED_KEYS = new Set([
   'financeiro-ano-anterior',
 ]);
 
+let pool;
+function getPool() {
+  if (!pool) {
+    const connectionString =
+      process.env.POSTGRES_URL ||
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_PRISMA_URL;
+    if (!connectionString) {
+      throw new Error(
+        'Nenhuma variável de ambiente de conexão encontrada (POSTGRES_URL / DATABASE_URL).'
+      );
+    }
+    pool = new Pool({
+      connectionString,
+      ssl: { rejectUnauthorized: false },
+    });
+  }
+  return pool;
+}
+
 async function ensureTable() {
-  await sql`
+  await getPool().query(`
     CREATE TABLE IF NOT EXISTS dashboard_kv (
       key TEXT PRIMARY KEY,
       value JSONB NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
-  `;
+  `);
 }
 
 export default async function handler(req, res) {
-  // CORS básico — ajuste allowed origin se quiser restringir depois
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -53,7 +62,10 @@ export default async function handler(req, res) {
     }
 
     if (action === 'get') {
-      const { rows } = await sql`SELECT value FROM dashboard_kv WHERE key = ${key}`;
+      const { rows } = await getPool().query(
+        'SELECT value FROM dashboard_kv WHERE key = $1',
+        [key]
+      );
       if (rows.length === 0) {
         res.status(200).json({ value: null });
         return;
@@ -67,18 +79,19 @@ export default async function handler(req, res) {
         res.status(400).json({ error: 'Campo "value" é obrigatório para action=set.' });
         return;
       }
-      await sql`
-        INSERT INTO dashboard_kv (key, value, updated_at)
-        VALUES (${key}, ${JSON.stringify(value)}::jsonb, now())
-        ON CONFLICT (key)
-        DO UPDATE SET value = ${JSON.stringify(value)}::jsonb, updated_at = now();
-      `;
+      await getPool().query(
+        `INSERT INTO dashboard_kv (key, value, updated_at)
+         VALUES ($1, $2::jsonb, now())
+         ON CONFLICT (key)
+         DO UPDATE SET value = $2::jsonb, updated_at = now();`,
+        [key, JSON.stringify(value)]
+      );
       res.status(200).json({ ok: true });
       return;
     }
 
     if (action === 'delete') {
-      await sql`DELETE FROM dashboard_kv WHERE key = ${key}`;
+      await getPool().query('DELETE FROM dashboard_kv WHERE key = $1', [key]);
       res.status(200).json({ ok: true });
       return;
     }
