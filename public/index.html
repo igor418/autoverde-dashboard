@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Financeiro — Ouro Verde</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F2F4F8; --surface:#FFFFFF; --navy:#101B33; --navy-soft:#3A4A6B; --muted:#6B7690; --line:#E7EAF1;
+    --fin:#0F7A73;   --fin-soft:#E3F3F1;
+    --gold:#B7791F;  --gold-soft:#FBF1DF;
+    --com:#4C51BF;   --com-soft:#EBECFB;
+    --pos:#1E8449; --pos-bg:#E9F7EF;
+    --neg:#C0392B; --neg-bg:#FCEBEA;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1100px 420px at 12% -10%, #E7F3F1 0%, transparent 60%),
+      radial-gradient(900px 360px at 100% 0%, #FBF1DF 0%, transparent 55%),
+      var(--bg);
+    color:var(--navy); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1360px;margin:0 auto;padding:28px 20px 90px;}
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:22px;}
+  header.top .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fin);font-weight:600;margin-bottom:6px;}
+  header.top h1{font-family:'Space Grotesk',sans-serif;font-size:29px;margin:0;font-weight:700;letter-spacing:-0.01em;}
+  header.top .updated{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);text-align:right;}
+  header.top .updated b{color:var(--navy);font-weight:600;}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:26px;}
+  .legend .chip{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--navy-soft);font-family:'IBM Plex Mono',monospace;}
+  .legend .dot{width:9px;height:9px;border-radius:50%;}
+
+  .hero{
+    background:linear-gradient(135deg,#0F1E3D 0%, #142A52 55%, #0F7A73 145%);
+    border-radius:18px;padding:26px 28px;color:#fff;position:relative;overflow:hidden;
+    display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:32px;
+  }
+  .hero::after{content:'';position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.10) 0%, transparent 70%);}
+  .hero .label{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:8px;}
+  .hero .big{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:700;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;}
+  .hero .delta{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.14);}
+  .hero .sparkwrap{width:280px;height:90px;position:relative;z-index:1;}
+  .hero .mini-stats{display:flex;gap:26px;flex-wrap:wrap;position:relative;z-index:1;}
+  .hero .mini-stats .m{font-family:'IBM Plex Mono',monospace;}
+  .hero .mini-stats .m .k{font-size:10.5px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;}
+  .hero .mini-stats .m .v{font-size:18px;font-weight:600;margin-top:3px;}
+
+  .section-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin:38px 0 14px;display:flex;align-items:center;gap:10px;color:var(--navy);}
+  .section-title .tag{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fin);background:var(--fin-soft);padding:3px 9px;border-radius:20px;letter-spacing:.05em;font-weight:600;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+  .kpi-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 14px;position:relative;overflow:hidden;
+    border-left:4px solid var(--area-color, var(--fin));box-shadow:0 1px 2px rgba(16,27,51,.03);}
+  .kpi-card .top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .kpi-card .icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--area-soft, var(--fin-soft));color:var(--area-color, var(--fin));flex:none;}
+  .kpi-card .icon svg{width:14px;height:14px;}
+  .kpi-card .name{font-size:12px;color:var(--muted);font-weight:600;line-height:1.35;flex:1;}
+  .kpi-card .value{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:var(--navy);font-variant-numeric:tabular-nums;margin-top:12px;}
+  .kpi-card .delta{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:20px;}
+  .kpi-card .delta2{display:inline-flex;align-items:center;gap:4px;margin-top:6px;margin-left:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;}
+  .delta.pos,.delta2.pos{color:var(--pos);background:var(--pos-bg);}
+  .delta.neg,.delta2.neg{color:var(--neg);background:var(--neg-bg);}
+  .delta.flat,.delta2.flat{color:var(--muted);background:#F1F2F5;}
+  .kpi-card .sub{font-size:10px;color:var(--muted);margin-top:6px;font-style:italic;}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:16px;}
+  .panel h3{font-family:'Space Grotesk',sans-serif;font-size:14.5px;margin:0 0 14px;color:var(--navy);}
+  .form-row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;}
+  .field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px;font-weight:600;font-family:'IBM Plex Mono',monospace;letter-spacing:.02em;}
+  .field input{font-family:'IBM Plex Mono',monospace;font-size:13.5px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;width:100%;background:#FCFCFD;color:var(--navy);}
+  .field input:focus{outline:2px solid var(--fin);outline-offset:1px;border-color:var(--fin);}
+  .grid-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:18px;}
+  .btn{font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;padding:10px 18px;border-radius:9px;border:none;cursor:pointer;}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{background:var(--navy-soft);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--muted);}
+  .form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .save-msg{font-size:12.5px;color:var(--pos);font-family:'IBM Plex Mono',monospace;}
+
+  .prior-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px;}
+  .prior-col h4{font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;}
+  .prior-row{display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:6px;}
+  .prior-row span{font-size:12px;color:var(--navy-soft);}
+  .prior-row input{font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;width:100%;background:#FCFCFD;}
+
+  .chart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px;}
+  .chart-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px 12px;border-top:3px solid var(--area-color, var(--fin));}
+  .chart-card .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .chart-card .title{font-size:12.5px;font-weight:700;color:var(--navy-soft);}
+  .chart-card .latest{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--navy);}
+  .chart-card .chart-holder{position:relative;height:130px;}
+  .chart-card svg{display:block;width:100%;height:100%;overflow:visible;}
+  .tooltip{position:absolute;pointer-events:none;background:var(--navy);color:#fff;padding:5px 9px;border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;white-space:nowrap;transform:translate(-50%,-125%);opacity:0;transition:opacity .1s;z-index:5;}
+  .chart-empty{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:center;height:130px;}
+
+  .table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:16px;}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:900px;}
+  thead th{position:sticky;top:0;background:var(--navy);color:#fff;text-align:left;padding:10px 12px;font-weight:600;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;}
+  tbody td{padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;font-family:'IBM Plex Mono',monospace;color:var(--navy-soft);font-variant-numeric:tabular-nums;}
+  tbody td.date-cell{font-weight:700;color:var(--navy);font-family:'Inter',sans-serif;}
+  tbody tr:nth-child(even){background:#FAFBFC;}
+  tbody tr:hover{background:var(--fin-soft);}
+  .row-actions{display:flex;gap:6px;}
+  .icon-btn{border:none;background:transparent;cursor:pointer;color:var(--muted);font-size:13px;padding:4px 6px;border-radius:5px;}
+  .icon-btn:hover{background:var(--line);color:var(--navy);}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+  .shared-banner{
+    background:var(--fin-soft);border:1px solid var(--fin);color:var(--fin);
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;
+    padding:8px 14px;border-radius:8px;margin-bottom:18px;display:flex;align-items:center;gap:8px;
+  }
+  .conn-error{
+    background:var(--neg-bg);border:1px solid var(--neg);color:var(--neg);
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;
+    padding:8px 14px;border-radius:8px;margin-bottom:18px;display:none;
+  }
+  ::selection{background:var(--fin-soft);}
+  @media (max-width:640px){
+    header.top{flex-direction:column;align-items:flex-start;}
+    header.top .updated{text-align:left;}
+    .hero{flex-direction:column;align-items:flex-start;}
+    .hero .sparkwrap{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow">Indicadores financeiros</div>
+      <h1>Dashboard Financeiro — Ouro Verde</h1>
+    </div>
+    <div class="updated">Último lançamento diário<br><b id="lastUpdated">—</b></div>
+  </header>
+
+  <div class="shared-banner">⚠ Dados compartilhados — todas as pessoas com acesso a este painel veem e editam as mesmas informações.</div>
+  <div class="conn-error" id="connError">⚠ Não foi possível conectar ao banco de dados. Verifique a configuração da API.</div>
+
+  <div class="legend">
+    <div class="chip"><span class="dot" style="background:var(--fin)"></span>Faturamento / Contratos / Títulos</div>
+    <div class="chip"><span class="dot" style="background:var(--com)"></span>Recorrentes (SAV / PGRS)</div>
+    <div class="chip"><span class="dot" style="background:var(--gold)"></span>Renovação PGRS / Novos Parceiros</div>
+  </div>
+
+  <div class="hero">
+    <div>
+      <div class="label">Faturamento · acumulado no mês</div>
+      <div class="big" id="heroValue">—</div>
+      <div class="delta" id="heroDelta">—</div>
+    </div>
+    <div class="mini-stats" id="heroMini"></div>
+    <div class="sparkwrap" id="heroSpark"></div>
+  </div>
+
+  <div class="section-title">Panorama do mês <span class="tag" id="latestTag">—</span></div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="section-title">Lançamento diário <span class="tag">formulário</span></div>
+  <div class="panel">
+    <h3>Faturamento, contratos, recorrentes e títulos — informe os valores do dia</h3>
+    <div class="form-row">
+      <div class="field" style="max-width:180px;">
+        <label>Data</label>
+        <input type="date" id="dailyDate">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" id="loadDailyBtn" type="button">Carregar dia existente</button>
+        <span class="save-msg" id="dailySaveMsg"></span>
+      </div>
+    </div>
+    <div class="grid-inputs">
+      <div class="field"><label>Faturamento do dia (R$)</label><input type="number" step="any" id="in_faturamento"></div>
+      <div class="field"><label>Contratos — valor atual (R$)</label><input type="number" step="any" id="in_contratos"></div>
+      <div class="field"><label>SAV — recorrentes (qtd)</label><input type="number" step="any" id="in_sav"></div>
+      <div class="field"><label>PGRS — recorrentes (qtd)</label><input type="number" step="any" id="in_pgrs"></div>
+      <div class="field"><label>Títulos a receber (R$)</label><input type="number" step="any" id="in_titulos"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="saveDailyBtn" type="button">Salvar dia</button>
+      <button class="btn btn-ghost" id="clearDailyBtn" type="button">Limpar formulário</button>
+    </div>
+  </div>
+
+  <div class="section-title">Lançamento mensal <span class="tag">formulário</span></div>
+  <div class="panel">
+    <h3>Renovação de PGRS e novos clientes parceiros — uma vez por mês</h3>
+    <div class="form-row">
+      <div class="field" style="max-width:180px;">
+        <label>Mês</label>
+        <input type="month" id="monthlyMonth">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" id="loadMonthlyBtn" type="button">Carregar mês existente</button>
+        <span class="save-msg" id="monthlySaveMsg"></span>
+      </div>
+    </div>
+    <div class="grid-inputs">
+      <div class="field"><label>PGRS — valor a renovar no mês (R$)</label><input type="number" step="any" id="in_pgrsMeta"></div>
+      <div class="field"><label>PGRS — valor renovado no mês (R$)</label><input type="number" step="any" id="in_pgrsRealizado"></div>
+      <div class="field"><label>Novos clientes parceiros (R$)</label><input type="number" step="any" id="in_novosParceiros"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="saveMonthlyBtn" type="button">Salvar mês</button>
+      <button class="btn btn-ghost" id="clearMonthlyBtn" type="button">Limpar formulário</button>
+    </div>
+  </div>
+
+  <div class="section-title">Referência do ano anterior <span class="tag">preencher 1x</span></div>
+  <div class="panel">
+    <h3>Fechamento mensal do ano anterior — usado para comparar a evolução</h3>
+    <div class="prior-grid" id="priorGrid"></div>
+    <div class="form-actions" style="margin-top:14px;">
+      <button class="btn btn-primary" id="savePriorBtn" type="button">Salvar referência do ano anterior</button>
+      <span class="save-msg" id="priorSaveMsg"></span>
+    </div>
+  </div>
+
+  <div class="section-title">Tendência <span class="tag" id="pointsTag">—</span></div>
+  <div class="chart-grid" id="chartGrid"></div>
+
+  <div class="section-title">Histórico diário</div>
+  <div class="table-wrap">
+    <table><thead><tr id="dailyTableHead"></tr></thead><tbody id="dailyTableBody"></tbody></table>
+  </div>
+
+  <div class="section-title">Histórico mensal</div>
+  <div class="table-wrap">
+    <table><thead><tr id="monthlyTableHead"></tr></thead><tbody id="monthlyTableBody"></tbody></table>
+  </div>
+
+</div>
+
+<script>
+const AREA = {
+  fin: {color:'#0F7A73', soft:'#E3F3F1'},
+  com: {color:'#4C51BF', soft:'#EBECFB'},
+  gold:{color:'#B7791F', soft:'#FBF1DF'},
+};
+const ICONS = {
+  fin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1.1 3 2.3c0 3-6 1.4-6 4.4 0 1.3 1.3 2.3 3 2.3s3-1 3-2.3"/></svg>',
+  com: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>',
+  gold:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+};
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+const KEY_DAILY = 'financeiro-diario';
+const KEY_MONTHLY = 'financeiro-mensal';
+const KEY_PRIOR = 'financeiro-ano-anterior';
+
+// ---------------------------------------------------------------------
+// CAMADA DE PERSISTÊNCIA — substitui o window.storage do Claude.ai
+// Chama a API serverless em /api/data, que grava no Postgres da Vercel.
+// ---------------------------------------------------------------------
+async function apiCall(action, key, value){
+  const res = await fetch('/api/data', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action, key, value})
+  });
+  if(!res.ok){
+    throw new Error('Falha na API: '+res.status);
+  }
+  return res.json();
+}
+
+let DAILY = {};     // { 'YYYY-MM-DD': {faturamento, contratos, sav, pgrs, titulos} }
+let MONTHLY = {};   // { 'YYYY-MM': {pgrsMeta, pgrsRealizado, novosParceiros} }
+let PRIOR = { faturamento: Array(12).fill(null), sav: Array(12).fill(null), pgrs: Array(12).fill(null) };
+
+function fmtCur(v){
+  if(v===null||v===undefined||v==='') return '—';
+  return 'R$\u00A0'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtCurShort(v){
+  if(v===null||v===undefined||v==='') return '—';
+  const n=Number(v);
+  if(Math.abs(n)>=1000000) return 'R$\u00A0'+(n/1000000).toFixed(2).replace('.',',')+'M';
+  if(Math.abs(n)>=1000) return 'R$\u00A0'+(n/1000).toFixed(1).replace('.',',')+'k';
+  return 'R$\u00A0'+n.toLocaleString('pt-BR');
+}
+function fmtInt(v){
+  if(v===null||v===undefined||v==='') return '—';
+  return Number(v).toLocaleString('pt-BR');
+}
+function fmtPct(v){
+  if(v===null||v===undefined||v===''||!isFinite(v)) return '—';
+  return (v*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+}
+function fmtDateBR(iso){ const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function fmtMonthBR(ym){ const [y,m]=ym.split('-'); return `${MESES[parseInt(m,10)-1]}/${y}`; }
+function sortedDates(){ return Object.keys(DAILY).sort(); }
+function sortedMonths(){ return Object.keys(MONTHLY).sort(); }
+
+async function loadAll(){
+  try{
+    document.getElementById('connError').style.display = 'none';
+    const [d, m, p] = await Promise.all([
+      apiCall('get', KEY_DAILY),
+      apiCall('get', KEY_MONTHLY),
+      apiCall('get', KEY_PRIOR),
+    ]);
+    DAILY = d.value || {};
+    MONTHLY = m.value || {};
+    PRIOR = p.value || { faturamento: Array(12).fill(null), sav: Array(12).fill(null), pgrs: Array(12).fill(null) };
+  }catch(e){
+    console.error(e);
+    document.getElementById('connError').style.display = 'flex';
+    DAILY = {}; MONTHLY = {};
+    PRIOR = { faturamento: Array(12).fill(null), sav: Array(12).fill(null), pgrs: Array(12).fill(null) };
+  }
+}
+async function persistDaily(){ try{ await apiCall('set', KEY_DAILY, DAILY); }catch(e){console.error(e); alert('Erro ao salvar. Tente novamente.');} }
+async function persistMonthly(){ try{ await apiCall('set', KEY_MONTHLY, MONTHLY); }catch(e){console.error(e); alert('Erro ao salvar. Tente novamente.');} }
+async function persistPrior(){ try{ await apiCall('set', KEY_PRIOR, PRIOR); }catch(e){console.error(e); alert('Erro ao salvar. Tente novamente.');} }
+
+// ---- derived series ----
+function monthCloseSeries(dates, field){
+  const closes = {};
+  let prevDate = null, running = null;
+  dates.forEach(d => {
+    if(prevDate){
+      const pd = new Date(prevDate), cd = new Date(d);
+      if(cd.getMonth()!==pd.getMonth() || cd.getFullYear()!==pd.getFullYear()){
+        running = DAILY[prevDate][field];
+      }
+    }
+    closes[d] = running;
+    prevDate = d;
+  });
+  return closes;
+}
+function accumSeries(dates, field, resetOn){
+  const out = {};
+  let acc = null, prevDate = null;
+  dates.forEach(d => {
+    const val = Number(DAILY[d][field]) || 0;
+    const cd = new Date(d);
+    let sameBucket = false;
+    if(prevDate){
+      const pd = new Date(prevDate);
+      sameBucket = resetOn==='month'
+        ? (cd.getMonth()===pd.getMonth() && cd.getFullYear()===pd.getFullYear())
+        : (cd.getFullYear()===pd.getFullYear());
+    }
+    acc = sameBucket ? acc + val : val;
+    out[d] = acc;
+    prevDate = d;
+  });
+  return out;
+}
+function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
+
+function computeDerived(){
+  const dates = sortedDates();
+  const months = sortedMonths();
+  const d = {};
+  if(dates.length){
+    const latest = dates[dates.length-1];
+    const latestDateObj = new Date(latest);
+    const y = latestDateObj.getFullYear(), m = latestDateObj.getMonth(), day = latestDateObj.getDate();
+    const dim = daysInMonth(y,m);
+
+    const acumMes = accumSeries(dates, 'faturamento', 'month');
+    const acumAno = accumSeries(dates, 'faturamento', 'year');
+    d.faturamentoAcumMes = acumMes[latest];
+    d.faturamentoAcumAno = acumAno[latest];
+    d.acumMesSeries = acumMes;
+    d.acumAnoSeries = acumAno;
+
+    const fatPriorTotal = PRIOR.faturamento[m];
+    d.fatPriorTotal = fatPriorTotal;
+    d.fatPriorProporcional = (fatPriorTotal!=null) ? fatPriorTotal*day/dim : null;
+    d.fatVarMes = (d.fatPriorProporcional) ? (d.faturamentoAcumMes-d.fatPriorProporcional)/d.fatPriorProporcional : null;
+    let priorClosedSum = 0, hasAllClosed = true;
+    for(let i=0;i<m;i++){ if(PRIOR.faturamento[i]==null){hasAllClosed=false;} else {priorClosedSum += PRIOR.faturamento[i];} }
+    d.fatAnoAnteriorEquivalente = (hasAllClosed && d.fatPriorProporcional!=null) ? priorClosedSum + d.fatPriorProporcional : null;
+    d.fatVarAno = (d.fatAnoAnteriorEquivalente) ? (d.faturamentoAcumAno-d.fatAnoAnteriorEquivalente)/d.fatAnoAnteriorEquivalente : null;
+
+    const contratosClose = monthCloseSeries(dates, 'contratos');
+    d.contratosAtual = DAILY[latest].contratos;
+    d.contratosClose = contratosClose[latest];
+    d.contratosVar = (d.contratosClose) ? (d.contratosAtual-d.contratosClose)/d.contratosClose : null;
+
+    const savClose = monthCloseSeries(dates, 'sav');
+    const pgrsClose = monthCloseSeries(dates, 'pgrs');
+    d.savAtual = DAILY[latest].sav;
+    d.pgrsAtual = DAILY[latest].pgrs;
+    d.savClose = savClose[latest];
+    d.pgrsClose = pgrsClose[latest];
+    d.savVarMes = (d.savClose) ? (d.savAtual-d.savClose)/d.savClose : null;
+    d.pgrsVarMes = (d.pgrsClose) ? (d.pgrsAtual-d.pgrsClose)/d.pgrsClose : null;
+    d.savPrior = PRIOR.sav[m];
+    d.pgrsPrior = PRIOR.pgrs[m];
+    d.savVarAno = (d.savPrior) ? (d.savAtual-d.savPrior)/d.savPrior : null;
+    d.pgrsVarAno = (d.pgrsPrior) ? (d.pgrsAtual-d.pgrsPrior)/d.pgrsPrior : null;
+    d.totalAtual = (d.savAtual!=null && d.pgrsAtual!=null) ? d.savAtual+d.pgrsAtual : null;
+    d.totalClose = (d.savClose!=null && d.pgrsClose!=null) ? d.savClose+d.pgrsClose : null;
+    d.totalVarMes = (d.totalClose) ? (d.totalAtual-d.totalClose)/d.totalClose : null;
+    d.totalPrior = (d.savPrior!=null && d.pgrsPrior!=null) ? d.savPrior+d.pgrsPrior : null;
+    d.totalVarAno = (d.totalPrior) ? (d.totalAtual-d.totalPrior)/d.totalPrior : null;
+
+    const titulosClose = monthCloseSeries(dates, 'titulos');
+    d.titulosAtual = DAILY[latest].titulos;
+    d.titulosClose = titulosClose[latest];
+    d.titulosVar = (d.titulosClose) ? (d.titulosAtual-d.titulosClose)/d.titulosClose : null;
+
+    d.latestDate = latest;
+  }
+  if(months.length){
+    const latestM = months[months.length-1];
+    const prevM = months.length>1 ? months[months.length-2] : null;
+    const cur = MONTHLY[latestM];
+    d.pgrsMeta = cur.pgrsMeta;
+    d.pgrsRealizado = cur.pgrsRealizado;
+    d.pgrsPct = (d.pgrsMeta) ? d.pgrsRealizado/d.pgrsMeta : null;
+    d.pgrsVarRealizado = (prevM && MONTHLY[prevM].pgrsRealizado) ? (d.pgrsRealizado-MONTHLY[prevM].pgrsRealizado)/MONTHLY[prevM].pgrsRealizado : null;
+
+    d.novosParceirosAtual = cur.novosParceiros;
+    let acc=null, prevMo=null;
+    months.forEach(mo=>{
+      const val = Number(MONTHLY[mo].novosParceiros)||0;
+      const sameYear = prevMo && mo.slice(0,4)===prevMo.slice(0,4);
+      acc = sameYear ? acc+val : val;
+      MONTHLY[mo]._acumAno = acc;
+      prevMo = mo;
+    });
+    d.novosParceirosAcumAno = MONTHLY[latestM]._acumAno;
+    d.novosParceirosVar = (prevM && MONTHLY[prevM].novosParceiros) ? (d.novosParceirosAtual-MONTHLY[prevM].novosParceiros)/MONTHLY[prevM].novosParceiros : null;
+    d.latestMonth = latestM;
+  }
+  return d;
+}
+
+// ---- rendering ----
+function miniPath(values, w, h, pad=4){
+  const idxValid = values.map((v,i)=>({v,i})).filter(o=>o.v!==null&&o.v!==undefined);
+  if(idxValid.length<2) return null;
+  const vals = idxValid.map(o=>o.v);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range=(max-min)||1;
+  const n = values.length;
+  const stepX = (w-pad*2)/(n-1||1);
+  let path=''; let started=false; const pts=[];
+  values.forEach((v,i)=>{
+    const x = pad+i*stepX;
+    if(v===null||v===undefined){ started=false; return; }
+    const y = h-pad-((v-min)/range)*(h-pad*2);
+    path += (started?'L':'M')+x.toFixed(1)+','+y.toFixed(1)+' ';
+    started=true; pts.push([x,y]);
+  });
+  return {path, pts};
+}
+
+function deltaBadge(val, opts={}){
+  if(val===null||val===undefined||!isFinite(val)) return `<span class="${opts.cls||'delta'} flat">sem comparação</span>`;
+  const cls = val>0.001?'pos':(val<-0.001?'neg':'flat');
+  const arrow = val>0.001?'▲':(val<-0.001?'▼':'—');
+  return `<span class="${opts.cls||'delta'} ${cls}">${arrow} ${Math.abs(val*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}%</span>`;
+}
+
+function renderHero(d){
+  const heroValue = document.getElementById('heroValue');
+  const heroDelta = document.getElementById('heroDelta');
+  const heroMini = document.getElementById('heroMini');
+  const heroSpark = document.getElementById('heroSpark');
+  const lastUpdated = document.getElementById('lastUpdated');
+  if(!d.latestDate){ heroValue.textContent='—'; heroDelta.textContent=''; heroMini.innerHTML=''; heroSpark.innerHTML=''; lastUpdated.textContent='—'; return; }
+  lastUpdated.textContent = fmtDateBR(d.latestDate);
+  heroValue.textContent = fmtCur(d.faturamentoAcumMes);
+  heroDelta.innerHTML = (d.fatVarMes!=null)
+    ? `${d.fatVarMes>0?'▲':'▼'} ${Math.abs(d.fatVarMes*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% vs mesmo período do ano anterior`
+    : 'sem referência do ano anterior para este mês';
+  heroMini.innerHTML = `
+    <div class="m"><div class="k">Acumulado no ano</div><div class="v">${fmtCurShort(d.faturamentoAcumAno)}</div></div>
+    <div class="m"><div class="k">Mesmo período ano anterior</div><div class="v">${fmtCurShort(d.fatPriorProporcional)}</div></div>
+    <div class="m"><div class="k">Dias lançados</div><div class="v">${sortedDates().length}</div></div>
+  `;
+  const values = sortedDates().map(dt=>d.acumMesSeries[dt]);
+  const sp = miniPath(values, 280, 90, 8);
+  if(sp){
+    const areaPath = sp.path + `L${sp.pts[sp.pts.length-1][0]},90 L${sp.pts[0][0]},90 Z`;
+    heroSpark.innerHTML = `<svg viewBox="0 0 280 90" width="280" height="90">
+      <defs><linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity="0.35"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+      <path d="${areaPath}" fill="url(#heroGrad)"/>
+      <path d="${sp.path}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      ${sp.pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===sp.pts.length-1?4:2}" fill="#fff"/>`).join('')}
+    </svg>`;
+  } else heroSpark.innerHTML='';
+}
+
+function renderKPIs(d){
+  const grid = document.getElementById('kpiGrid');
+  const tag = document.getElementById('latestTag');
+  tag.textContent = d.latestDate ? fmtDateBR(d.latestDate) : '—';
+  const cards = [];
+
+  cards.push({area:'fin', name:'Contratos com concessionárias', value:fmtCur(d.contratosAtual), delta:deltaBadge(d.contratosVar), sub:'vs. fechamento do mês anterior'});
+  cards.push({area:'com', name:'SAV — recorrentes', value:fmtInt(d.savAtual), delta:deltaBadge(d.savVarMes)+deltaBadge(d.savVarAno,{cls:'delta2'}), sub:'vs. mês anterior · vs. ano anterior'});
+  cards.push({area:'com', name:'PGRS — recorrentes', value:fmtInt(d.pgrsAtual), delta:deltaBadge(d.pgrsVarMes)+deltaBadge(d.pgrsVarAno,{cls:'delta2'}), sub:'vs. mês anterior · vs. ano anterior'});
+  cards.push({area:'com', name:'Total recorrentes (SAV+PGRS)', value:fmtInt(d.totalAtual), delta:deltaBadge(d.totalVarMes)+deltaBadge(d.totalVarAno,{cls:'delta2'}), sub:'vs. mês anterior · vs. ano anterior'});
+  cards.push({area:'fin', name:'Títulos a receber (próx. 12 meses)', value:fmtCur(d.titulosAtual), delta:deltaBadge(d.titulosVar), sub:'vs. fechamento do mês anterior'});
+  cards.push({area:'gold', name:'Renovação PGRS — % do mês', value:fmtPct(d.pgrsPct), delta:deltaBadge(d.pgrsVarRealizado), sub:`renovado: ${fmtCur(d.pgrsRealizado)} de ${fmtCur(d.pgrsMeta)}`});
+  cards.push({area:'gold', name:'Novos clientes parceiros (mês)', value:fmtCur(d.novosParceirosAtual), delta:deltaBadge(d.novosParceirosVar), sub:`acumulado no ano: ${fmtCurShort(d.novosParceirosAcumAno)}`});
+
+  if(!d.latestDate && !d.latestMonth){
+    grid.innerHTML = '<div class="empty-state">Nenhum dado lançado ainda. Use os formulários abaixo.</div>';
+    return;
+  }
+
+  grid.innerHTML = cards.map(c => {
+    const ac = AREA[c.area];
+    return `<div class="kpi-card" style="--area-color:${ac.color};--area-soft:${ac.soft};">
+      <div class="top-row"><div class="name">${c.name}</div><div class="icon">${ICONS[c.area]}</div></div>
+      <div class="value">${c.value}</div>
+      <div>${c.delta}</div>
+      <div class="sub">${c.sub}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderPriorGrid(){
+  const grid = document.getElementById('priorGrid');
+  const cols = [
+    {key:'faturamento', label:'Faturamento (R$)', area:'fin'},
+    {key:'sav', label:'SAV (qtd)', area:'com'},
+    {key:'pgrs', label:'PGRS (qtd)', area:'com'},
+  ];
+  grid.innerHTML = cols.map(c => `
+    <div class="prior-col">
+      <h4>${c.label}</h4>
+      ${MESES.map((m,i)=>`
+        <div class="prior-row">
+          <span>${m}</span>
+          <input type="number" step="any" id="prior_${c.key}_${i}" value="${PRIOR[c.key][i]!=null?PRIOR[c.key][i]:''}">
+        </div>`).join('')}
+    </div>
+  `).join('');
+}
+
+function renderCharts(d){
+  const dates = sortedDates();
+  const months = sortedMonths();
+  document.getElementById('pointsTag').textContent = `${dates.length} dias · ${months.length} meses`;
+  const grid = document.getElementById('chartGrid');
+
+  const dailySeries = [
+    {key:'faturamento', label:'Faturamento — acumulado no mês', area:'fin', fmt:fmtCur, values: dates.map(dt=>d.acumMesSeries?d.acumMesSeries[dt]:null)},
+    {key:'contratos', label:'Contratos com concessionárias', area:'fin', fmt:fmtCur, values: dates.map(dt=>DAILY[dt].contratos)},
+    {key:'sav', label:'SAV — recorrentes', area:'com', fmt:fmtInt, values: dates.map(dt=>DAILY[dt].sav)},
+    {key:'pgrs', label:'PGRS — recorrentes', area:'com', fmt:fmtInt, values: dates.map(dt=>DAILY[dt].pgrs)},
+    {key:'titulos', label:'Títulos a receber', area:'fin', fmt:fmtCur, values: dates.map(dt=>DAILY[dt].titulos)},
+  ];
+  const monthlySeries = [
+    {key:'pgrsPct', label:'Renovação PGRS — % do mês', area:'gold', fmt:fmtPct, values: months.map(mo=>MONTHLY[mo].pgrsMeta?MONTHLY[mo].pgrsRealizado/MONTHLY[mo].pgrsMeta:null), labels: months},
+    {key:'novosParceiros', label:'Novos clientes parceiros', area:'gold', fmt:fmtCur, values: months.map(mo=>MONTHLY[mo].novosParceiros), labels: months},
+  ];
+
+  function buildChartCard(label, area, fmt, values, dateLabels){
+    const ac = AREA[area];
+    const W=520,H=130,PAD=10;
+    const valid = values.filter(v=>v!==null&&v!==undefined&&isFinite(v));
+    if(valid.length<2){
+      return `<div class="chart-card" style="--area-color:${ac.color}"><div class="head"><div class="title">${label}</div></div><div class="chart-empty">dados insuficientes para tendência</div></div>`;
+    }
+    const min=Math.min(...valid), max=Math.max(...valid), range=(max-min)||1;
+    const n=values.length, stepX=(W-PAD*2)/(n-1||1);
+    let path=''; let started=false; const pts=[];
+    values.forEach((v,i)=>{
+      const x=PAD+i*stepX;
+      if(v===null||v===undefined||!isFinite(v)){started=false;return;}
+      const y=H-PAD-((v-min)/range)*(H-PAD*2-10)-5;
+      path += (started?'L':'M')+x.toFixed(1)+','+y.toFixed(1)+' ';
+      started=true; pts.push([x,y,v,dateLabels[i]]);
+    });
+    const areaPath = path + `L${pts[pts.length-1][0]},${H} L${pts[0][0]},${H} Z`;
+    const gradId = 'grad_'+label.replace(/[^a-zA-Z0-9]/g,'');
+    const latestVal = values[values.length-1];
+    return `<div class="chart-card" style="--area-color:${ac.color}">
+      <div class="head"><div class="title">${label}</div><div class="latest">${fmt(latestVal)}</div></div>
+      <div class="chart-holder">
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${ac.color}" stop-opacity="0.28"/><stop offset="100%" stop-color="${ac.color}" stop-opacity="0"/></linearGradient></defs>
+          ${[0.25,0.5,0.75].map(f=>`<line x1="0" y1="${H*f}" x2="${W}" y2="${H*f}" stroke="#EEF0F5" stroke-width="1"/>`).join('')}
+          <path d="${areaPath}" fill="url(#${gradId})"/>
+          <path d="${path}" fill="none" stroke="${ac.color}" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+          ${pts.map((p,i)=>`<circle class="pt" cx="${p[0]}" cy="${p[1]}" r="${i===pts.length-1?4:2.5}" fill="${i===pts.length-1?'#101B33':ac.color}" data-v="${p[2]}" data-d="${p[3]}" data-fmt="${label}"/>`).join('')}
+        </svg>
+        <div class="tooltip"></div>
+      </div>
+    </div>`;
+  }
+
+  let html = '';
+  dailySeries.forEach(s => { html += buildChartCard(s.label, s.area, s.fmt, s.values, dates.map(fmtDateBR)); });
+  monthlySeries.forEach(s => { html += buildChartCard(s.label, s.area, s.fmt, s.values, months.map(fmtMonthBR)); });
+  grid.innerHTML = html;
+
+  const fmtByLabel = {};
+  dailySeries.concat(monthlySeries).forEach(s=>fmtByLabel[s.label]=s.fmt);
+
+  grid.querySelectorAll('.chart-holder').forEach(holder => {
+    const svg = holder.querySelector('svg');
+    const tooltip = holder.querySelector('.tooltip');
+    if(!svg) return;
+    svg.querySelectorAll('circle.pt').forEach(c => {
+      c.addEventListener('mouseenter', () => {
+        const rect = holder.getBoundingClientRect();
+        const svgRect = svg.getBoundingClientRect();
+        const cx = parseFloat(c.getAttribute('cx')), cy = parseFloat(c.getAttribute('cy'));
+        const scaleX = svgRect.width/520, scaleY = svgRect.height/130;
+        const px = cx*scaleX + (svgRect.left-rect.left);
+        const py = cy*scaleY + (svgRect.top-rect.top);
+        tooltip.style.left = px+'px'; tooltip.style.top = py+'px';
+        const label = c.getAttribute('data-fmt');
+        const fmt = fmtByLabel[label] || fmtCur;
+        tooltip.textContent = c.getAttribute('data-d') + ' · ' + fmt(parseFloat(c.getAttribute('data-v')));
+        tooltip.style.opacity = 1;
+        c.setAttribute('r', 5.5);
+      });
+      c.addEventListener('mouseleave', () => { tooltip.style.opacity = 0; c.setAttribute('r', 2.5); });
+    });
+  });
+}
+
+function renderDailyTable(){
+  const dates = sortedDates().slice().reverse();
+  document.getElementById('dailyTableHead').innerHTML =
+    '<th>Data</th><th>Faturamento do dia</th><th>Contratos</th><th>SAV</th><th>PGRS</th><th>Títulos a receber</th><th>Ações</th>';
+  const body = document.getElementById('dailyTableBody');
+  if(dates.length===0){ body.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum lançamento diário ainda.</td></tr>`; return; }
+  body.innerHTML = dates.map(dt => {
+    const r = DAILY[dt];
+    return `<tr>
+      <td class="date-cell">${fmtDateBR(dt)}</td>
+      <td>${fmtCur(r.faturamento)}</td><td>${fmtCur(r.contratos)}</td><td>${fmtInt(r.sav)}</td><td>${fmtInt(r.pgrs)}</td><td>${fmtCur(r.titulos)}</td>
+      <td class="row-actions">
+        <button class="icon-btn" onclick="editDaily('${dt}')">✎ editar</button>
+        <button class="icon-btn" onclick="deleteDaily('${dt}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function renderMonthlyTable(){
+  const months = sortedMonths().slice().reverse();
+  document.getElementById('monthlyTableHead').innerHTML =
+    '<th>Mês</th><th>PGRS — a renovar</th><th>PGRS — renovado</th><th>% Renovado</th><th>Novos parceiros</th><th>Ações</th>';
+  const body = document.getElementById('monthlyTableBody');
+  if(months.length===0){ body.innerHTML = `<tr><td colspan="6" class="empty-state">Nenhum lançamento mensal ainda.</td></tr>`; return; }
+  body.innerHTML = months.map(mo => {
+    const r = MONTHLY[mo];
+    const pct = r.pgrsMeta ? r.pgrsRealizado/r.pgrsMeta : null;
+    return `<tr>
+      <td class="date-cell">${fmtMonthBR(mo)}</td>
+      <td>${fmtCur(r.pgrsMeta)}</td><td>${fmtCur(r.pgrsRealizado)}</td><td>${fmtPct(pct)}</td><td>${fmtCur(r.novosParceiros)}</td>
+      <td class="row-actions">
+        <button class="icon-btn" onclick="editMonthly('${mo}')">✎ editar</button>
+        <button class="icon-btn" onclick="deleteMonthly('${mo}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAll(){
+  const d = computeDerived();
+  renderHero(d);
+  renderKPIs(d);
+  renderCharts(d);
+  renderDailyTable();
+  renderMonthlyTable();
+}
+
+window.editDaily = function(dt){
+  document.getElementById('dailyDate').value = dt;
+  const r = DAILY[dt] || {};
+  ['faturamento','contratos','sav','pgrs','titulos'].forEach(k => {
+    document.getElementById('in_'+k).value = (r[k]===null||r[k]===undefined) ? '' : r[k];
+  });
+  window.scrollTo({top: document.querySelectorAll('.panel')[0].offsetTop - 20, behavior:'smooth'});
+};
+window.deleteDaily = async function(dt){
+  if(!confirm(`Excluir o lançamento de ${fmtDateBR(dt)}?`)) return;
+  delete DAILY[dt]; await persistDaily(); renderAll();
+};
+window.editMonthly = function(mo){
+  document.getElementById('monthlyMonth').value = mo;
+  const r = MONTHLY[mo] || {};
+  ['pgrsMeta','pgrsRealizado','novosParceiros'].forEach(k => {
+    document.getElementById('in_'+k).value = (r[k]===null||r[k]===undefined) ? '' : r[k];
+  });
+  window.scrollTo({top: document.querySelectorAll('.panel')[1].offsetTop - 20, behavior:'smooth'});
+};
+window.deleteMonthly = async function(mo){
+  if(!confirm(`Excluir o lançamento de ${fmtMonthBR(mo)}?`)) return;
+  delete MONTHLY[mo]; await persistMonthly(); renderAll();
+};
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function thisMonthISO(){ return new Date().toISOString().slice(0,7); }
+
+document.getElementById('dailyDate').value = todayISO();
+document.getElementById('monthlyMonth').value = thisMonthISO();
+
+document.getElementById('loadDailyBtn').addEventListener('click', () => {
+  const dt = document.getElementById('dailyDate').value;
+  if(!dt) return;
+  if(DAILY[dt]) editDaily(dt);
+  else ['faturamento','contratos','sav','pgrs','titulos'].forEach(k => document.getElementById('in_'+k).value = '');
+});
+document.getElementById('clearDailyBtn').addEventListener('click', () => {
+  ['faturamento','contratos','sav','pgrs','titulos'].forEach(k => document.getElementById('in_'+k).value = '');
+});
+document.getElementById('saveDailyBtn').addEventListener('click', async () => {
+  const dt = document.getElementById('dailyDate').value;
+  const msg = document.getElementById('dailySaveMsg');
+  if(!dt){ msg.style.color='#C0392B'; msg.textContent='Selecione uma data.'; return; }
+  const entry = {};
+  ['faturamento','contratos','sav','pgrs','titulos'].forEach(k => {
+    const raw = document.getElementById('in_'+k).value;
+    entry[k] = raw==='' ? null : Number(raw);
+  });
+  DAILY[dt] = entry;
+  await persistDaily();
+  renderAll();
+  msg.style.color='#1E8449'; msg.textContent='Salvo ✓';
+  setTimeout(()=>{ msg.textContent=''; }, 2500);
+});
+
+document.getElementById('loadMonthlyBtn').addEventListener('click', () => {
+  const mo = document.getElementById('monthlyMonth').value;
+  if(!mo) return;
+  if(MONTHLY[mo]) editMonthly(mo);
+  else ['pgrsMeta','pgrsRealizado','novosParceiros'].forEach(k => document.getElementById('in_'+k).value = '');
+});
+document.getElementById('clearMonthlyBtn').addEventListener('click', () => {
+  ['pgrsMeta','pgrsRealizado','novosParceiros'].forEach(k => document.getElementById('in_'+k).value = '');
+});
+document.getElementById('saveMonthlyBtn').addEventListener('click', async () => {
+  const mo = document.getElementById('monthlyMonth').value;
+  const msg = document.getElementById('monthlySaveMsg');
+  if(!mo){ msg.style.color='#C0392B'; msg.textContent='Selecione um mês.'; return; }
+  const entry = {};
+  ['pgrsMeta','pgrsRealizado','novosParceiros'].forEach(k => {
+    const raw = document.getElementById('in_'+k).value;
+    entry[k] = raw==='' ? null : Number(raw);
+  });
+  MONTHLY[mo] = entry;
+  await persistMonthly();
+  renderAll();
+  msg.style.color='#1E8449'; msg.textContent='Salvo ✓';
+  setTimeout(()=>{ msg.textContent=''; }, 2500);
+});
+
+document.getElementById('savePriorBtn').addEventListener('click', async () => {
+  const msg = document.getElementById('priorSaveMsg');
+  ['faturamento','sav','pgrs'].forEach(key => {
+    for(let i=0;i<12;i++){
+      const raw = document.getElementById(`prior_${key}_${i}`).value;
+      PRIOR[key][i] = raw==='' ? null : Number(raw);
+    }
+  });
+  await persistPrior();
+  renderAll();
+  msg.style.color='#1E8449'; msg.textContent='Salvo ✓';
+  setTimeout(()=>{ msg.textContent=''; }, 2500);
+});
+
+(async function init(){
+  await loadAll();
+  renderPriorGrid();
+  renderAll();
+})();
+</script>
+</body>
+</html>

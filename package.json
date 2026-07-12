@@ -1,0 +1,12 @@
+{
+  "name": "autoverde-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dashboard Financeiro - Ouro Verde / AutoVerde",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.9.0"
+  }
+}
