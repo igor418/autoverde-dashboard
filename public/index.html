@@ -322,18 +322,22 @@ async function persistMonthly(){ try{ await apiCall('set', KEY_MONTHLY, MONTHLY)
 async function persistPrior(){ try{ await apiCall('set', KEY_PRIOR, PRIOR); }catch(e){console.error(e); alert('Erro ao salvar. Tente novamente.');} }
 
 // ---- derived series ----
+function monthKeyOf(dateStr){ return dateStr.slice(0,7); }
+
 function monthCloseSeries(dates, field){
   const closes = {};
-  let prevDate = null, running = null;
+  const lastValueByMonth = {};
+  dates.forEach(d => { lastValueByMonth[monthKeyOf(d)] = DAILY[d][field]; });
+  const monthsSeen = [];
   dates.forEach(d => {
-    if(prevDate){
-      const pd = new Date(prevDate), cd = new Date(d);
-      if(cd.getMonth()!==pd.getMonth() || cd.getFullYear()!==pd.getFullYear()){
-        running = DAILY[prevDate][field];
-      }
-    }
-    closes[d] = running;
-    prevDate = d;
+    const mk = monthKeyOf(d);
+    if(monthsSeen[monthsSeen.length-1] !== mk) monthsSeen.push(mk);
+  });
+  dates.forEach(d => {
+    const mk = monthKeyOf(d);
+    const idx = monthsSeen.indexOf(mk);
+    const prevMonthKey = idx > 0 ? monthsSeen[idx-1] : null;
+    closes[d] = prevMonthKey ? lastValueByMonth[prevMonthKey] : null;
   });
   return closes;
 }
@@ -475,12 +479,13 @@ function renderHero(d){
   if(!d.latestDate){ heroValue.textContent='—'; heroDelta.textContent=''; heroMini.innerHTML=''; heroSpark.innerHTML=''; lastUpdated.textContent='—'; return; }
   lastUpdated.textContent = fmtDateBR(d.latestDate);
   heroValue.textContent = fmtCur(d.faturamentoAcumMes);
-  heroDelta.innerHTML = (d.fatVarMes!=null)
-    ? `${d.fatVarMes>0?'▲':'▼'} ${Math.abs(d.fatVarMes*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% vs mesmo período do ano anterior`
+    heroDelta.innerHTML = (d.fatVarMes!=null)
+    ? `${d.fatVarMes>0?'▲':'▼'} ${Math.abs(d.fatVarMes*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% vs mesmo período do ano anterior (proporcional)`
     : 'sem referência do ano anterior para este mês';
   heroMini.innerHTML = `
     <div class="m"><div class="k">Acumulado no ano</div><div class="v">${fmtCurShort(d.faturamentoAcumAno)}</div></div>
-    <div class="m"><div class="k">Mesmo período ano anterior</div><div class="v">${fmtCurShort(d.fatPriorProporcional)}</div></div>
+    <div class="m"><div class="k">Até o mesmo dia, ano anterior</div><div class="v">${fmtCurShort(d.fatPriorProporcional)}</div></div>
+    <div class="m"><div class="k">Mês inteiro, ano anterior</div><div class="v">${fmtCurShort(d.fatPriorTotal)}</div></div>
     <div class="m"><div class="k">Dias lançados</div><div class="v">${sortedDates().length}</div></div>
   `;
   const values = sortedDates().map(dt=>d.acumMesSeries[dt]);
