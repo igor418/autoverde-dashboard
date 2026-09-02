@@ -723,9 +723,14 @@ document.getElementById('clearDailyBtn').addEventListener('click', () => {
   ['faturamento','contratos','sav','pgrs','titulos'].forEach(k => document.getElementById('in_'+k).value = '');
 });
 document.getElementById('saveDailyBtn').addEventListener('click', async () => {
-  const dt = document.getElementById('dailyDate').value;
+  let dt = document.getElementById('dailyDate').value;
   const msg = document.getElementById('dailySaveMsg');
   if(!dt){ msg.style.color='#C0392B'; msg.textContent='Selecione uma data.'; return; }
+  // Normaliza a data para o formato YYYY-MM-DD (com zeros à esquerda),
+  // corrigindo casos em que o navegador salva sem zero (ex: 2026-9-1)
+  // o que quebrava a ordenação e o cálculo do acumulado do mês.
+  const [dtY, dtM, dtD] = dt.split('-');
+  dt = `${dtY}-${String(dtM).padStart(2,'0')}-${String(dtD).padStart(2,'0')}`;
   const entry = {};
   ['faturamento','contratos','sav','pgrs','titulos'].forEach(k => {
     const raw = document.getElementById('in_'+k).value;
