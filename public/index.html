@@ -346,13 +346,11 @@ function accumSeries(dates, field, resetOn){
   let acc = null, prevDate = null;
   dates.forEach(d => {
     const val = Number(DAILY[d][field]) || 0;
-    const cd = new Date(d);
     let sameBucket = false;
     if(prevDate){
-      const pd = new Date(prevDate);
       sameBucket = resetOn==='month'
-        ? (cd.getMonth()===pd.getMonth() && cd.getFullYear()===pd.getFullYear())
-        : (cd.getFullYear()===pd.getFullYear());
+        ? (d.slice(0,7) === prevDate.slice(0,7))
+        : (d.slice(0,4) === prevDate.slice(0,4));
     }
     acc = sameBucket ? acc + val : val;
     out[d] = acc;
